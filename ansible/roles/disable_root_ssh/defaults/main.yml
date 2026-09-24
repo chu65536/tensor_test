@@ -1,7 +1,4 @@
 ---
-# defaults file for disable_root_ssh
-# Переменная для имени сервиса (sshd в RHEL, ssh в Debian/Ubuntu)
-ssh_service_name: "sshd"
-
-# Значение директивы PermitRootLogin
-ssh_permit_root_login: "no"
+# Значение можно менять при назначении роли хосту/хостгруппе в Foreman
+sshd_permit_root_login: "no"
+sshd_config_path: /etc/ssh/sshd_config

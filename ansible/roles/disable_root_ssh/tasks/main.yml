@@ -1,13 +1,25 @@
 ---
-- name: Отключить вход root по SSH
+- name: Убедиться, что PermitRootLogin задан корректно
   ansible.builtin.lineinfile:
-    path: /etc/ssh/sshd_config
-    regexp: '^#?\s*PermitRootLogin'
-    line: "PermitRootLogin {{ ssh_permit_root_login }}"
+    path: "{{ sshd_config_path }}"
+    regexp: '^#?\s*PermitRootLogin\s+'
+    line: "PermitRootLogin {{ sshd_permit_root_login }}"
     validate: '/usr/sbin/sshd -t -f %s'
-  notify: Restart SSH
+    state: present
+  notify: restart sshd
 
-- name: Определить имя сервиса SSH (для Debian/Ubuntu)
-  ansible.builtin.set_fact:
-    ssh_service_name: "ssh"
-  when: ansible_os_family == "Debian"
+- name: Проверить, нет ли переопределений в /etc/ssh/sshd_config.d/
+  ansible.builtin.find:
+    paths: /etc/ssh/sshd_config.d
+    patterns: "*.conf"
+  register: drop_in_files
+
+- name: Отключить PermitRootLogin в drop-in файлах, если есть
+  ansible.builtin.lineinfile:
+    path: "{{ item.path }}"
+    regexp: '^#?\s*PermitRootLogin\s+'
+    line: "PermitRootLogin {{ sshd_permit_root_login }}"
+    validate: '/usr/sbin/sshd -t -f %s'
+  loop: "{{ drop_in_files.files }}"
+  when: drop_in_files.matched > 0
+  notify: restart sshd
